@@ -10,7 +10,7 @@ const (
 	OrderStatusCancelled  OrderStatus = "cancelled"
 )
 
-func (status OrderStatus) isValid() bool {
+func (status OrderStatus) IsValid() bool {
 	switch status {
 	case OrderStatusPending,
 		OrderStatusProcessing,

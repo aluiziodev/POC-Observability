@@ -8,8 +8,8 @@ type Config struct {
 	ReadTimeout  time.Duration // Tempo limite para leitura de uma requisicao
 }
 
-func (cfg *Config) Load() {
-	*cfg = Config{
+func Load() Config {
+	return Config{
 		Port:         "8080",
 		ShutDownTime: 10 * time.Second,
 		ReadTimeout:  5 * time.Second,

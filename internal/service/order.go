@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"order-service/internal/domain"
 	"order-service/internal/models"
 	"order-service/internal/repository"
@@ -37,4 +38,14 @@ func GetOrder(ctx context.Context, ID string) (*domain.Order, error) {
 	orderRepo := repository.NewOrderRepository()
 	order, err := orderRepo.GetById(ctx, ID)
 	return order, err
+}
+
+func UpdateOrderStatus(ctx context.Context, ID string, status domain.OrderStatus) (*domain.Order, error) {
+	if !status.IsValid() {
+		return nil, errors.New("Status invalido!!")
+	}
+	orderRepo := repository.NewOrderRepository()
+	order, err := orderRepo.UpdateStatus(ctx, ID, status)
+	return order, err
+
 }

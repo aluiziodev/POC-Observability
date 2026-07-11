@@ -69,3 +69,23 @@ func (repo *OrderRepository) GetById(ctx context.Context, ID string) (*domain.Or
 	return &copied, nil
 
 }
+
+func (repo *OrderRepository) UpdateStatus(ctx context.Context, ID string, status domain.OrderStatus) (*domain.Order, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+
+	order, ok := repo.orders[ID]
+	if !ok {
+		return nil, errors.New("Nao existe pedido com esse ID")
+	}
+
+	order.Status = status
+	order.UpdatedAt = time.Now().UTC()
+
+	copied := *order
+	return &copied, nil
+}
