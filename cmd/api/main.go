@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"log"
 	"log/slog"
 	"net/http"
 	"order-service/internal/config"
@@ -11,11 +12,17 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
 
 	logger := observability.NewLogger()
+
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
 
 	cfg := config.Load()
 

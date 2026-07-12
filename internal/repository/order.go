@@ -2,21 +2,17 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"database/sql"
 	"order-service/internal/domain"
-	"sync"
 	"time"
 )
 
 type OrderRepository struct {
-	mu     sync.Mutex
-	orders map[string]*domain.Order
+	db *sql.DB
 }
 
-func NewOrderRepository() *OrderRepository {
-	return &OrderRepository{
-		orders: make(map[string]*domain.Order),
-	}
+func NewOrderRepository(db *sql.DB) *OrderRepository {
+	return &OrderRepository{db}
 }
 
 func (repo *OrderRepository) Create(ctx context.Context, order *domain.Order) error {
@@ -24,16 +20,16 @@ func (repo *OrderRepository) Create(ctx context.Context, order *domain.Order) er
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 
 	now := time.Now().UTC()
 	order.CreatedAt = now
 	order.UpdatedAt = now
 
-	stored := *order
-	repo.orders[order.ID] = &stored
-	return nil
+	_, err := repo.db.ExecContext(ctx, `
+		INSERT INTO orders (id, item, quantity, status, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, order.ID, order.Item, order.Quantity, order.Status, order.CreatedAt, order.UpdatedAt)
+	return err
 }
 
 func (repo *OrderRepository) GetAll(ctx context.Context) ([]*domain.Order, error) {
@@ -41,14 +37,29 @@ func (repo *OrderRepository) GetAll(ctx context.Context) ([]*domain.Order, error
 		return nil, err
 	}
 
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-
-	orders := make([]*domain.Order, 0, len(repo.orders))
-	for _, order := range repo.orders {
-		copied := *order
-		orders = append(orders, &copied)
+	rows, err := repo.db.QueryContext(ctx, `
+		SELECT id, item, quantity, status, created_at, updated_at
+		FROM orders
+		ORDER BY status
+	`)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
+
+	orders := make([]*domain.Order, 0)
+	for rows.Next() {
+		var order domain.Order
+		if err := rows.Scan(&order.ID, &order.Item, &order.Quantity, &order.Status,
+			&order.CreatedAt, &order.UpdatedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, &order)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return orders, nil
 }
 
@@ -57,35 +68,33 @@ func (repo *OrderRepository) GetById(ctx context.Context, ID string) (*domain.Or
 		return nil, err
 	}
 
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+	var order domain.Order
 
-	order, ok := repo.orders[ID]
-	if !ok {
-		return nil, errors.New("Nao existe pedido com esse ID")
-	}
-
-	copied := *order
-	return &copied, nil
-
-}
-
-func (repo *OrderRepository) UpdateStatus(ctx context.Context, ID string, status domain.OrderStatus) (*domain.Order, error) {
-	if err := ctx.Err(); err != nil {
+	err := repo.db.QueryRowContext(ctx, `
+		SELECT id, item, quantity, status, created_at, updated_at 
+		FROM orders WHERE id=$1
+	`, ID).Scan(&order.ID, &order.Item, &order.Quantity, &order.Status,
+		&order.CreatedAt, &order.UpdatedAt)
+	if err != nil {
 		return nil, err
 	}
 
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+	return &order, nil
 
-	order, ok := repo.orders[ID]
-	if !ok {
-		return nil, errors.New("Nao existe pedido com esse ID")
+}
+
+func (repo *OrderRepository) UpdateStatus(ctx context.Context, ID string, status domain.OrderStatus) error {
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
-	order.Status = status
-	order.UpdatedAt = time.Now().UTC()
+	now := time.Now().UTC()
 
-	copied := *order
-	return &copied, nil
+	_, err := repo.db.ExecContext(ctx, `
+        UPDATE orders 
+		SET status = $1, updated_at = $2
+		WHERE id = $2
+	`, status, now, ID)
+
+	return err
 }
