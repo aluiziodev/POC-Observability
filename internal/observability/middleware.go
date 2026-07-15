@@ -11,14 +11,6 @@ import (
 	"time"
 )
 
-func RequestIdFromContext(ctx context.Context) string {
-	if id, ok := ctx.Value(domain.RequestIdKey).(string); ok {
-		return id
-	}
-
-	return ""
-}
-
 func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

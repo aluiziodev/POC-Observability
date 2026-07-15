@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"order-service/internal/connection"
 	"order-service/internal/domain"
 	"time"
 )
@@ -11,8 +12,8 @@ type OrderRepository struct {
 	db *sql.DB
 }
 
-func NewOrderRepository(db *sql.DB) *OrderRepository {
-	return &OrderRepository{db}
+func NewOrderRepository() *OrderRepository {
+	return &OrderRepository{connection.DB}
 }
 
 func (repo *OrderRepository) Create(ctx context.Context, order *domain.Order) error {

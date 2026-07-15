@@ -8,7 +8,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func InitDB() (*sql.DB, error) {
+var DB *sql.DB
+
+func InitDB() error {
 
 	dbPassword := os.Getenv("POSTGRES_PASSWORD")
 	dbUser := os.Getenv("POSTGRES_USER")
@@ -18,11 +20,11 @@ func InitDB() (*sql.DB, error) {
 
 	DB, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if err = DB.Ping(); err != nil {
-		return nil, err
+		return err
 	}
-	return DB, nil
+	return nil
 }
