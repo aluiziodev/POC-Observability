@@ -7,8 +7,6 @@ import (
 	"order-service/internal/models"
 	"order-service/internal/response"
 	"order-service/internal/service"
-
-	"github.com/gorilla/mux"
 )
 
 // POST - /orders
@@ -46,7 +44,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusFound, orders)
+	response.WriteJSON(w, http.StatusOK, orders)
 }
 
 // GET - /orders/{id}
@@ -54,9 +52,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 func Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	parameters := mux.Vars(r)
-
-	ID := parameters["id"]
+	ID := r.PathValue("id")
 
 	order, err := service.GetOrder(ctx, ID)
 	if err != nil {
@@ -64,7 +60,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusFound, order)
+	response.WriteJSON(w, http.StatusOK, order)
 
 }
 
@@ -73,9 +69,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 func Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	parameters := mux.Vars(r)
-
-	ID := parameters["id"]
+	ID := r.PathValue("id")
 
 	var req models.StatusRequest
 
@@ -90,6 +84,6 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.WriteJSON(w, http.StatusNoContent, order)
+	response.WriteJSON(w, http.StatusOK, order)
 
 }

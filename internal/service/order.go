@@ -6,6 +6,7 @@ import (
 	"order-service/internal/connection"
 	"order-service/internal/domain"
 	"order-service/internal/models"
+	"order-service/internal/observability"
 	"order-service/internal/repository"
 
 	"github.com/google/uuid"
@@ -32,6 +33,7 @@ func CreateOrder(ctx context.Context, input models.CreateOrderInput) (*domain.Or
 		return nil, err
 	}
 
+	observability.OrdersCreatedTotal.Inc()
 	return order, nil
 }
 

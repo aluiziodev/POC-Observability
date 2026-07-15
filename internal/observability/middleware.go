@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"order-service/internal/domain"
 	"order-service/internal/models"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,15 +30,35 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 
 			rec := &models.ResponseRecorder{Writer: w, Status: http.StatusOK}
 
-			next.ServeHTTP(rec.Writer, r)
+			next.ServeHTTP(rec, r)
+
+			duration := time.Since(start)
+
+			path := routePattern(r)
 
 			logger.Info("http_request",
 				slog.String("request_id", reqID),
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
 				slog.Int("status", rec.Status),
-				slog.Duration("duration", time.Since(start)),
+				slog.Duration("duration", duration),
 			)
+
+			status := strconv.Itoa(rec.Status)
+			HttpRequestsTotal.WithLabelValues(r.Method, path, status).Inc()
+			httpRequestDuration.WithLabelValues(r.Method, path).Observe(duration.Seconds())
 		})
 	}
+}
+
+func routePattern(r *http.Request) string {
+	if r.Pattern == "" {
+		return r.URL.Path
+	}
+
+	if _, pattern, found := strings.Cut(r.Pattern, " "); found {
+		return pattern
+	}
+
+	return r.Pattern
 }
