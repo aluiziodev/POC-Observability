@@ -32,6 +32,12 @@ func main() {
 	}
 	defer connection.DB.Close()
 
+	shutDownTracer, err := observability.InitTracer(context.Background(), "order-service")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer observability.ShutDownTracer(shutDownTracer, logger, cfg.ShutDownTime)
+
 	router := router.GenerateRouter(logger)
 
 	server := &http.Server{

@@ -26,7 +26,7 @@ func (repo *OrderRepository) Create(ctx context.Context, order *domain.Order) er
 	order.CreatedAt = now
 	order.UpdatedAt = now
 
-	_, err := observeQuery("orders.create", func() (sql.Result, error) {
+	_, err := observeQuery(ctx, "orders.create", func() (sql.Result, error) {
 		result, err := repo.db.ExecContext(ctx, `
 		INSERT INTO orders (id, item, quantity, status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -43,7 +43,7 @@ func (repo *OrderRepository) GetAll(ctx context.Context) ([]*domain.Order, error
 		return nil, err
 	}
 
-	return observeQuery("orders.get_all", func() ([]*domain.Order, error) {
+	return observeQuery(ctx, "orders.get_all", func() ([]*domain.Order, error) {
 
 		rows, err := repo.db.QueryContext(ctx, `
 			SELECT id, item, quantity, status, created_at, updated_at
@@ -80,7 +80,7 @@ func (repo *OrderRepository) GetById(ctx context.Context, ID string) (*domain.Or
 		return nil, err
 	}
 
-	return observeQuery("orders.get_by_id", func() (*domain.Order, error) {
+	return observeQuery(ctx, "orders.get_by_id", func() (*domain.Order, error) {
 
 		var order domain.Order
 
@@ -104,7 +104,7 @@ func (repo *OrderRepository) UpdateStatus(ctx context.Context, ID string, status
 		return err
 	}
 
-	_, err := observeQuery("orders.update_status", func() (sql.Result, error) {
+	_, err := observeQuery(ctx, "orders.update_status", func() (sql.Result, error) {
 		now := time.Now().UTC()
 
 		result, err := repo.db.ExecContext(ctx, `
