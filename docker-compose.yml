@@ -1,5 +1,5 @@
 version: '3.9'
-
+ 
 services:
   postgres:
     image: postgres:16
@@ -12,10 +12,15 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+ 
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" 
+      - "4318:4318"   
+ 
 volumes:
   postgres_data:
-
-
 
   

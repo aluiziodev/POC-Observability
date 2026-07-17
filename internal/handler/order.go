@@ -5,10 +5,9 @@ import (
 	"net/http"
 	"order-service/internal/domain"
 	"order-service/internal/models"
+	"order-service/internal/observability"
 	"order-service/internal/response"
 	"order-service/internal/service"
-
-	"github.com/gorilla/mux"
 )
 
 // POST - /orders
@@ -18,6 +17,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		observability.WarnContext(ctx, "Corpo da requisiçao invalido!", err)
 		response.ErrorResponse(w, http.StatusBadRequest, "Erro no corpo da requisiçao")
 		return
 	}
@@ -27,6 +27,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		Quantity: req.Quantity,
 	})
 	if err != nil {
+		observability.ErrorContext(ctx, "Erro na criaçao do pedido!", err)
 		response.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -42,11 +43,12 @@ func List(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := service.ListOrders(ctx)
 	if err != nil {
+		observability.ErrorContext(ctx, "Erro ao listar os pedidos!", err)
 		response.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response.WriteJSON(w, http.StatusFound, orders)
+	response.WriteJSON(w, http.StatusOK, orders)
 }
 
 // GET - /orders/{id}
@@ -54,17 +56,16 @@ func List(w http.ResponseWriter, r *http.Request) {
 func Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	parameters := mux.Vars(r)
-
-	ID := parameters["id"]
+	ID := r.PathValue("id")
 
 	order, err := service.GetOrder(ctx, ID)
 	if err != nil {
+		observability.ErrorContext(ctx, "Erro ao listar pedido!", err)
 		response.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response.WriteJSON(w, http.StatusFound, order)
+	response.WriteJSON(w, http.StatusOK, order)
 
 }
 
@@ -73,23 +74,23 @@ func Get(w http.ResponseWriter, r *http.Request) {
 func Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	parameters := mux.Vars(r)
-
-	ID := parameters["id"]
+	ID := r.PathValue("id")
 
 	var req models.StatusRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		observability.WarnContext(ctx, "Corpo da requisiçao invalido!", err)
 		response.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	order, err := service.UpdateOrderStatus(ctx, ID, domain.OrderStatus(req.Status))
 	if err != nil {
+		observability.ErrorContext(ctx, "Erro na atualizaçao do pedido!", err)
 		response.ErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response.WriteJSON(w, http.StatusNoContent, order)
+	response.WriteJSON(w, http.StatusOK, order)
 
 }
